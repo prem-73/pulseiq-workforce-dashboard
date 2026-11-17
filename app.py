@@ -10,7 +10,7 @@ st.set_page_config(
 
 DATA_PATH = Path(__file__).parent / "data" / "department_month.csv"
 
-st.title("?? PulseIQ Workforce Analytics")
+st.title("PulseIQ Workforce Analytics")
 st.caption("Workforce | Payroll | Attendance | Department Insights")
 
 if not DATA_PATH.exists():
@@ -80,8 +80,8 @@ st.caption(f"Latest observed reporting period: {latest_month}")
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Headcount", f"{headcount:,.0f}")
-c2.metric("Gross Payroll", f"?{gross_pay:,.0f}")
-c3.metric("Net Payroll", f"?{net_pay:,.0f}")
+c2.metric("Gross Payroll", f"INR {gross_pay:,.0f}")
+c3.metric("Net Payroll", f"INR {net_pay:,.0f}")
 c4.metric(
     "Attendance Rate",
     f"{attendance_rate:.1f}%" if attendance_rate is not None else "N/A"
@@ -152,4 +152,6 @@ st.caption(
     "Source: Department-level aggregated internship dataset. "
     "Figures represent available source records, not live HR data."
 )
+
+
 
