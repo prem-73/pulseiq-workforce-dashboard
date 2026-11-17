@@ -8,10 +8,11 @@ st.set_page_config(
     layout="wide"
 )
 
-DATA_PATH = Path(__file__).parent / "data" / "department_month.csv"
+BASE = Path(__file__).parent
+DATA_PATH = BASE / "data" / "department_month.csv"
 
 st.title("PulseIQ Workforce Analytics")
-st.caption("Workforce | Payroll | Attendance | Department Insights")
+st.caption("Workforce | Payroll | Attendance | Productivity | Department Insights")
 
 if not DATA_PATH.exists():
     st.error("Dashboard data file not found.")
@@ -20,9 +21,10 @@ if not DATA_PATH.exists():
 df = pd.read_csv(DATA_PATH)
 
 required = [
-    "department_name", "year", "month", "gross_pay",
-    "net_pay", "attendance_records", "present_records",
-    "current_headcount", "month_label"
+    "department_name", "month", "month_label",
+    "gross_pay", "employer_cost", "headcount_end",
+    "attendance_rate", "hires", "exits",
+    "overtime_pay", "tasks", "tasks_done"
 ]
 
 missing = [col for col in required if col not in df.columns]
@@ -31,6 +33,7 @@ if missing:
     st.error(f"Missing required columns: {missing}")
     st.stop()
 
+df["month"] = pd.to_datetime(df["month"])
 df["month_label"] = df["month_label"].astype(str)
 
 months = sorted(df["month_label"].dropna().unique())
@@ -41,7 +44,7 @@ st.sidebar.header("Dashboard Filters")
 selected_month = st.sidebar.selectbox(
     "Select Month",
     ["All"] + months,
-    index=len(months)
+    index=0
 )
 
 selected_departments = st.sidebar.multiselect(
@@ -62,30 +65,20 @@ if filtered.empty:
 latest_month = filtered["month_label"].max()
 latest_data = filtered[filtered["month_label"] == latest_month]
 
-headcount = latest_data["current_headcount"].sum()
-gross_pay = filtered["gross_pay"].sum()
-net_pay = filtered["net_pay"].sum()
-
-attendance_records = filtered["attendance_records"].sum()
-present_records = filtered["present_records"].sum()
-
-attendance_rate = (
-    present_records / attendance_records * 100
-    if attendance_records > 0 else None
-)
+headcount = latest_data["headcount_end"].sum()
+gross_pay = latest_data["gross_pay"].sum()
+employer_cost = latest_data["employer_cost"].sum()
+attendance_rate = latest_data["attendance_rate"].mean() * 100
 
 st.subheader("Executive Summary")
-st.caption(f"Latest observed reporting period: {latest_month}")
+st.caption(f"Reporting period: {latest_month}")
 
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Headcount", f"{headcount:,.0f}")
 c2.metric("Gross Payroll", f"INR {gross_pay:,.0f}")
-c3.metric("Net Payroll", f"INR {net_pay:,.0f}")
-c4.metric(
-    "Attendance Rate",
-    f"{attendance_rate:.1f}%" if attendance_rate is not None else "N/A"
-)
+c3.metric("Employer Cost", f"INR {employer_cost:,.0f}")
+c4.metric("Average Department Attendance", f"{attendance_rate:.1f}%")
 
 st.divider()
 
@@ -93,16 +86,16 @@ st.subheader("Department-wise Headcount")
 
 dept_data = latest_data.groupby(
     "department_name", as_index=False
-)["current_headcount"].sum()
+)["headcount_end"].sum()
 
 fig = px.bar(
     dept_data,
     x="department_name",
-    y="current_headcount",
+    y="headcount_end",
     title="Headcount by Department",
     labels={
         "department_name": "Department",
-        "current_headcount": "Headcount"
+        "headcount_end": "Headcount"
     }
 )
 
@@ -112,46 +105,75 @@ st.subheader("Monthly Payroll Trend")
 
 payroll_trend = filtered.groupby(
     "month_label", as_index=False
-)[["gross_pay", "net_pay"]].sum()
+)[["gross_pay", "employer_cost"]].sum()
 
 payroll_trend = payroll_trend.sort_values("month_label")
 
 fig2 = px.line(
     payroll_trend,
     x="month_label",
-    y=["gross_pay", "net_pay"],
+    y=["gross_pay", "employer_cost"],
     markers=True,
-    title="Monthly Gross and Net Payroll",
+    title="Monthly Gross Payroll and Employer Cost",
     labels={
         "month_label": "Month",
-        "value": "Payroll (INR)",
-        "variable": "Payroll Type"
+        "value": "Amount (INR)",
+        "variable": "Cost Type"
     }
 )
 
 st.plotly_chart(fig2, use_container_width=True)
 
+st.subheader("Attendance by Department")
+
+attendance_data = latest_data[
+    ["department_name", "attendance_rate"]
+].copy()
+
+attendance_data["attendance_rate"] *= 100
+
+fig3 = px.bar(
+    attendance_data,
+    x="department_name",
+    y="attendance_rate",
+    title="Department Attendance Rate",
+    labels={
+        "department_name": "Department",
+        "attendance_rate": "Attendance Rate (%)"
+    }
+)
+
+st.plotly_chart(fig3, use_container_width=True)
+
 st.subheader("Department Data")
 
+display_columns = [
+    "department_name",
+    "headcount_end",
+    "gross_pay",
+    "employer_cost",
+    "attendance_rate",
+    "hires",
+    "exits",
+    "overtime_pay",
+    "tasks",
+    "tasks_done"
+]
+
+display_data = latest_data[display_columns].copy()
+display_data["attendance_rate"] *= 100
+display_data = display_data.rename(
+    columns={"attendance_rate": "attendance_rate_pct"}
+)
+
 st.dataframe(
-    latest_data[
-        [
-            "department_name",
-            "current_headcount",
-            "gross_pay",
-            "net_pay",
-            "present_records",
-            "attendance_records"
-        ]
-    ],
+    display_data,
     use_container_width=True,
     hide_index=True
 )
 
 st.caption(
     "Source: Department-level aggregated internship dataset. "
+    "Attendance KPI is the simple average of department attendance rates. "
     "Figures represent available source records, not live HR data."
 )
-
-
-
