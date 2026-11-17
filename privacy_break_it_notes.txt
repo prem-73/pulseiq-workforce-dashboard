@@ -1,0 +1,21 @@
+Task 18 - Privacy Break-It Test Notes
+
+1. Role access:
+   ADMIN - Passed
+   HR - D01 only - Passed
+   MANAGER - Team A only - Passed
+   EXECUTIVE - Company-level only - Passed
+
+2. Automated tests:
+   4/4 tests passed.
+
+3. M01 minimum group size:
+   Groups of 1, 2, 4 suppressed.
+   Complementary suppression applied.
+
+4. M04 attrition minimum group size:
+   Groups of 5 and 9 suppressed.
+   Group of 10 secondarily suppressed.
+   No small-group values exposed.
+
+Result: All tested privacy checks passed.

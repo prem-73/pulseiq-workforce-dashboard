@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 .env
 .streamlit/secrets.toml
+app_task17_backup.py
+
+# Private source data
+fact_payroll.csv
+fact_attrition_risk.csv
+fact_anomaly.csv
+pulseiq.duckdb
