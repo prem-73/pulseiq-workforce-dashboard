@@ -1,0 +1,38 @@
+﻿name: Monthly Workforce Data Refresh
+
+on:
+  schedule:
+    - cron: "30 3 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Refresh workforce data
+        run: python refresh_data.py
+
+      - name: Commit updated dashboard data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/department_month.csv data/refresh_status.txt
+          git diff --cached --quiet || (
+            git commit -m "Automated monthly workforce data refresh" &&
+            git push
+          )
