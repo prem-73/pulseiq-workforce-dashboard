@@ -3,6 +3,15 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+import os
+import json
+from urllib.request import urlopen
+from urllib.error import URLError
+import os
+import json
+from urllib.request import urlopen
+from urllib.error import URLError
+
 from role_permissions import (
     ROLE_ASSIGNMENTS,
     get_user_permissions,
@@ -18,7 +27,59 @@ DATA = BASE / "data"
 
 st.title("PulseIQ Workforce Analytics")
 st.caption("Task 18 | Self-service KPI Explorer with privacy controls")
+# ==========================================
+# TASK 19 - METRICS API DATA FRESHNESS
+# ==========================================
 
+API_BASE_URL = os.getenv("PULSEIQ_API_URL", "").rstrip("/")
+
+st.subheader("Task 19 - Data Freshness")
+
+if API_BASE_URL:
+    try:
+        with urlopen(
+            f"{API_BASE_URL}/freshness",
+            timeout=5
+        ) as response:
+
+            freshness = json.loads(
+                response.read().decode("utf-8")
+            )
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Last Data Refresh",
+            freshness.get("last_refresh", "Unknown")
+        )
+
+        col2.metric(
+            "ETL Status",
+            freshness.get("etl_status", "Unknown")
+        )
+
+        col3.metric(
+            "Freshness Status",
+            freshness.get("freshness_status", "Unknown").upper()
+        )
+
+        st.caption(
+            f"Total Rows: {freshness.get('total_rows_in', 0)} | "
+            f"Passed: {freshness.get('total_rows_passed', 0)} | "
+            f"Quarantined: {freshness.get('total_rows_quarantined', 0)}"
+        )
+
+    except (URLError, TimeoutError, ValueError, KeyError):
+        st.warning(
+            "Data freshness information is unavailable."
+        )
+
+else:
+    st.info("Metrics API URL is not configured.")
+
+# ==========================================
+# END TASK 19
+# ==========================================
 # Demo identity switcher only; this is not authentication.
 demo_users_path = DATA / "demo_users.csv"
 if demo_users_path.exists():
