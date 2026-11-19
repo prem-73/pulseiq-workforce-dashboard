@@ -31,7 +31,15 @@ st.caption("Task 18 | Self-service KPI Explorer with privacy controls")
 # TASK 19 - METRICS API DATA FRESHNESS
 # ==========================================
 
-API_BASE_URL = os.getenv("PULSEIQ_API_URL", "").rstrip("/")
+API_BASE_URL = os.getenv("PULSEIQ_API_URL", "").strip().rstrip("/")
+
+if not API_BASE_URL:
+    try:
+        API_BASE_URL = str(
+            st.secrets["PULSEIQ_API_URL"]
+        ).strip().rstrip("/")
+    except Exception:
+        API_BASE_URL = ""
 
 st.subheader("Task 19 - Data Freshness")
 
