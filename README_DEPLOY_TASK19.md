@@ -42,3 +42,17 @@ This is an aggregate snapshot API, not a live connection to the local DuckDB.
 
 Never commit `pulseiq.duckdb`, raw CSVs, employee names/emails, salary rows,
 payroll rows, or attrition-risk records. The API is intentionally aggregate-only.
+
+## Raw Feed Column Rename Impact
+
+If a raw feed column is renamed, the ETL pipeline and dependent metric calculations may fail because they expect the original column name.
+
+For example, if `salary_amount` is renamed to `base_salary`:
+- Update the source-to-target mapping in the ETL script.
+- Update the data contract with the new column name.
+- Update the salary metric SQL definition.
+- Test the ETL pipeline and validate the salary total API response.
+- Verify data quality and dashboard freshness before deployment.
+
+Impact: Salary Total may fail or return incorrect results until all dependent components are updated and tested.
+
